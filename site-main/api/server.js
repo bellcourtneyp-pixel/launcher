@@ -224,6 +224,94 @@ app.patch('/api/news/:id/pin', verifyApiKey, (req, res) => {
   }
 });
 
+// ============================================
+// Roblox API Proxy (to bypass CORS)
+// These endpoints proxy requests to Roblox API
+// so the admin panel can fetch game info
+// ============================================
+
+const https = require('https');
+
+// Helper function to fetch from external API
+function fetchExternalAPI(url) {
+  return new Promise((resolve, reject) => {
+    https.get(url, {
+      headers: {
+        'User-Agent': 'RobBob-Admin-Panel/1.0',
+        'Accept': 'application/json'
+      }
+    }, (response) => {
+      let data = '';
+      response.on('data', chunk => data += chunk);
+      response.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          reject(new Error('Invalid JSON response from Roblox API'));
+        }
+      });
+    }).on('error', (err) => {
+      reject(err);
+    });
+  });
+}
+
+// GET /api/roblox/universe/:placeId - Get universe ID from place ID
+app.get('/api/roblox/universe/:placeId', async (req, res) => {
+  const { placeId } = req.params;
+  
+  // Validate placeId
+  if (!placeId || !/^\d+$/.test(placeId)) {
+    return res.status(400).json({ error: 'Bad Request', message: 'Invalid place ID' });
+  }
+  
+  try {
+    const data = await fetchExternalAPI(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`);
+    res.json(data);
+  } catch (err) {
+    console.error('Roblox universe API error:', err.message);
+    res.status(500).json({ error: 'Proxy Error', message: 'Failed to fetch from Roblox API' });
+  }
+});
+
+// GET /api/roblox/games/:universeId - Get game details
+app.get('/api/roblox/games/:universeId', async (req, res) => {
+  const { universeId } = req.params;
+  
+  // Validate universeId
+  if (!universeId || !/^\d+$/.test(universeId)) {
+    return res.status(400).json({ error: 'Bad Request', message: 'Invalid universe ID' });
+  }
+  
+  try {
+    const data = await fetchExternalAPI(`https://games.roblox.com/v1/games?universeIds=${universeId}`);
+    res.json(data);
+  } catch (err) {
+    console.error('Roblox games API error:', err.message);
+    res.status(500).json({ error: 'Proxy Error', message: 'Failed to fetch game details' });
+  }
+});
+
+// GET /api/roblox/thumbnails/:universeId - Get game thumbnail
+app.get('/api/roblox/thumbnails/:universeId', async (req, res) => {
+  const { universeId } = req.params;
+  
+  // Validate universeId
+  if (!universeId || !/^\d+$/.test(universeId)) {
+    return res.status(400).json({ error: 'Bad Request', message: 'Invalid universe ID' });
+  }
+  
+  try {
+    const data = await fetchExternalAPI(
+      `https://thumbnails.roblox.com/v1/games/icons?universeIds=${universeId}&size=512x512&format=Png&isCircular=false`
+    );
+    res.json(data);
+  } catch (err) {
+    console.error('Roblox thumbnails API error:', err.message);
+    res.status(500).json({ error: 'Proxy Error', message: 'Failed to fetch thumbnail' });
+  }
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found', message: 'Endpoint not found' });
