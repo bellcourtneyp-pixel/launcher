@@ -128,12 +128,121 @@ const observer = new IntersectionObserver((entries) => {
 
 // Observe all feature cards and news items
 document.addEventListener('DOMContentLoaded', () => {
-    const animatedElements = document.querySelectorAll('.feature-card, .news-item');
-    animatedElements.forEach(el => observer.observe(el));
+    // Load news first, then observe animations
+    loadNews().then(() => {
+        const animatedElements = document.querySelectorAll('.feature-card, .news-item');
+        animatedElements.forEach(el => observer.observe(el));
+    });
     
     // Load and display recommended games
     loadRecommendedGames();
 });
+
+// ========================================
+// News Loading (from localStorage - synced with admin panel)
+// ========================================
+
+// Load news from localStorage
+async function loadNews() {
+    const newsListEl = document.getElementById('newsList');
+    if (!newsListEl) return;
+    
+    // Try to load from localStorage (shared with admin panel)
+    const newsData = localStorage.getItem('robbob_news');
+    
+    if (newsData) {
+        try {
+            const news = JSON.parse(newsData);
+            if (news && news.length > 0) {
+                displayNews(news, newsListEl);
+                return;
+            }
+        } catch (error) {
+            console.error('Error parsing news:', error);
+        }
+    }
+    
+    // If no news in localStorage, show default news
+    displayDefaultNews(newsListEl);
+}
+
+// Display news articles
+function displayNews(newsArray, container) {
+    // Sort by date (newest first), with "new" items prioritized
+    const sorted = [...newsArray].sort((a, b) => {
+        if (a.isNew && !b.isNew) return -1;
+        if (!a.isNew && b.isNew) return 1;
+        return new Date(b.date) - new Date(a.date);
+    });
+    
+    container.innerHTML = sorted.map(news => `
+        <article class="news-item glass-panel">
+            <div class="news-header">
+                ${news.isNew ? '<span class="news-badge new">Новое</span>' : ''}
+                <time class="news-date">${formatNewsDate(news.date)}</time>
+            </div>
+            <h3 class="news-title">${escapeHtml(news.title)}</h3>
+            <p class="news-desc">${escapeHtml(news.desc)}</p>
+            ${news.tags && news.tags.length > 0 ? `
+                <div class="news-tags">
+                    ${news.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+                </div>
+            ` : ''}
+        </article>
+    `).join('');
+}
+
+// Display default news if none in localStorage
+function displayDefaultNews(container) {
+    const defaultNews = [
+        {
+            id: 1,
+            title: 'Релиз версии 1.0.0',
+            desc: 'Первая стабильная версия RobBob Launcher. Включает все основные функции: быстрый запуск игр, автоматические обновления, современный интерфейс с темной и светлой темами.',
+            tags: ['Релиз', 'Стабильная версия'],
+            isNew: true,
+            date: '2025-12-15'
+        },
+        {
+            id: 2,
+            title: 'Бета-тестирование завершено',
+            desc: 'Благодарим всех участников бета-тестирования! Ваши отзывы помогли улучшить лаунчер и исправить критические ошибки перед релизом.',
+            tags: ['Бета'],
+            isNew: false,
+            date: '2025-12-10'
+        },
+        {
+            id: 3,
+            title: 'Анонс RobBob Launcher',
+            desc: 'Представляем новый игровой лаунчер с фокусом на производительность и удобство. Скоро выйдет первая публичная версия.',
+            tags: ['Анонс'],
+            isNew: false,
+            date: '2025-12-05'
+        }
+    ];
+    
+    displayNews(defaultNews, container);
+}
+
+// Format date for display
+function formatNewsDate(dateStr) {
+    try {
+        const date = new Date(dateStr);
+        const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+                        'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+        return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+    } catch (e) {
+        return dateStr;
+    }
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
 
 // ========================================
 // Recommended Games
