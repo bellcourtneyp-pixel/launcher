@@ -20,6 +20,27 @@ navButtons.forEach(button => {
     });
 });
 
+// News Sub-Tabs Navigation
+const newsTabs = document.querySelectorAll('.news-tab');
+const newsTabContents = document.querySelectorAll('.news-tab-content');
+
+newsTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+        const targetTab = tab.getAttribute('data-news-tab');
+        
+        // Update active tab button
+        newsTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // Update active tab content
+        newsTabContents.forEach(content => content.classList.remove('active'));
+        const targetContent = document.getElementById(targetTab);
+        if (targetContent) {
+            targetContent.classList.add('active');
+        }
+    });
+});
+
 // Theme Toggle
 const themeToggle = document.getElementById('themeToggle');
 const body = document.body;
@@ -163,17 +184,20 @@ function loadRecommendedGames() {
 // Display games on the page
 function displayGames(games) {
     const gamesGrid = document.getElementById('gamesGrid');
-    const recommendedGamesSection = document.getElementById('recommendedGames');
+    const gamesEmpty = document.getElementById('gamesEmpty');
     
-    if (!gamesGrid || !recommendedGamesSection) {
+    if (!gamesGrid) {
         return;
     }
     
-    // Show the section
-    recommendedGamesSection.style.display = 'block';
+    // Hide the empty state
+    if (gamesEmpty) {
+        gamesEmpty.style.display = 'none';
+    }
     
-    // Clear existing content
-    gamesGrid.innerHTML = '';
+    // Clear existing content (except empty state)
+    const existingCards = gamesGrid.querySelectorAll('.game-card-container');
+    existingCards.forEach(card => card.remove());
     
     // Create game cards
     games.forEach(game => {

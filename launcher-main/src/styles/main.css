@@ -1965,9 +1965,9 @@ select:focus, input[type="text"]:focus {
 .tutorial-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
 }
 
 .tutorial-spotlight {
@@ -1978,7 +1978,7 @@ select:focus, input[type="text"]:focus {
   box-shadow:
     0 0 0 4px var(--green),
     0 0 20px var(--green-glow),
-    0 0 0 9999px rgba(0, 0, 0, 0.7);
+    0 0 0 9999px rgba(0, 0, 0, 0.3);
   pointer-events: none;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: 15001;
@@ -2140,11 +2140,14 @@ select:focus, input[type="text"]:focus {
 
 /* Light theme adjustments */
 [data-theme='light'] .tutorial-backdrop {
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 [data-theme='light'] .tutorial-spotlight {
-  box-shadow: 0 0 0 9999px rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 0 0 4px var(--green),
+    0 0 20px var(--green-glow),
+    0 0 0 9999px rgba(255, 255, 255, 0.35);
 }
 
 /* ========================================
