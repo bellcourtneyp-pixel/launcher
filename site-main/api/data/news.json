@@ -1,0 +1,37 @@
+{
+  "news": [
+    {
+      "id": "welcome-1",
+      "title": "Добро пожаловать в RobBob!",
+      "emoji": "rocket",
+      "content": "Первый релиз RobBob Launcher с улучшенным сетевым режимом!",
+      "date": "2024-12-16",
+      "pinned": true,
+      "link": null,
+      "createdAt": "2024-12-16T12:00:00.000Z",
+      "updatedAt": "2024-12-16T12:00:00.000Z"
+    },
+    {
+      "id": "security-2",
+      "title": "Безопасное подключение",
+      "emoji": "shield",
+      "content": "Сетевой режим активируется автоматически вместе с лаунчером для обхода блокировок.",
+      "date": "2024-12-16",
+      "pinned": false,
+      "link": null,
+      "createdAt": "2024-12-16T12:00:00.000Z",
+      "updatedAt": "2024-12-16T12:00:00.000Z"
+    },
+    {
+      "id": "speed-3",
+      "title": "Быстрый запуск",
+      "emoji": "zap",
+      "content": "Оптимизирован запуск Roblox для максимальной скорости загрузки игр.",
+      "date": "2024-12-16",
+      "pinned": false,
+      "link": null,
+      "createdAt": "2024-12-16T12:00:00.000Z",
+      "updatedAt": "2024-12-16T12:00:00.000Z"
+    }
+  ]
+}
