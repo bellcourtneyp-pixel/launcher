@@ -482,51 +482,74 @@ function saveGames() {
     localStorage.setItem(STORAGE_KEYS.GAMES, JSON.stringify(currentGames));
 }
 
-// Fetch game details from Roblox API
+// Get the API base URL for proxying Roblox requests
+function getApiBaseUrl() {
+  // First try the launcher API URL if configured
+  const launcherApiUrl = localStorage.getItem(LAUNCHER_STORAGE_KEYS.API_URL);
+  if (launcherApiUrl) {
+    return launcherApiUrl;
+  }
+  // Fallback to current origin (for local development or same-origin deployment)
+  return window.location.origin;
+}
+
+// Fetch game details from Roblox API via proxy (to avoid CORS)
 async function fetchGameDetails(placeId) {
-    try {
-        // First, get the Universe ID from Place ID
-        const universeResponse = await fetch(`https://apis.roblox.com/universes/v1/places/${placeId}/universe`);
-        
-        if (!universeResponse.ok) {
-            throw new Error('Failed to fetch universe ID');
-        }
-        
-        const universeData = await universeResponse.json();
-        const universeId = universeData.universeId;
-        
-        // Then, fetch the game details
-        const detailsResponse = await fetch(`https://games.roblox.com/v1/games?universeIds=${universeId}`);
-        
-        if (!detailsResponse.ok) {
-            throw new Error('Failed to fetch game details');
-        }
-        
-        const detailsData = await detailsResponse.json();
-        const gameInfo = detailsData.data && detailsData.data[0];
-        
-        if (!gameInfo) {
-            throw new Error('Game not found');
-        }
-        
-        // Fetch thumbnail
-        const thumbnailResponse = await fetch(`https://thumbnails.roblox.com/v1/games/icons?universeIds=${universeId}&size=512x512&format=Png&isCircular=false`);
-        
-        let thumbnailUrl = null;
-        if (thumbnailResponse.ok) {
-            const thumbnailData = await thumbnailResponse.json();
-            thumbnailUrl = thumbnailData.data && thumbnailData.data[0] && thumbnailData.data[0].imageUrl;
-        }
-        
-        return {
-            name: gameInfo.name,
-            universeId: universeId,
-            thumbnailUrl: thumbnailUrl
-        };
-    } catch (error) {
-        console.error('Error fetching game details:', error);
-        return null;
+  const baseUrl = getApiBaseUrl();
+  
+  try {
+    // Step 1: Get the Universe ID from Place ID via proxy
+    const universeResponse = await fetch(`${baseUrl}/api/roblox/universe/${placeId}`);
+    
+    if (!universeResponse.ok) {
+      const errorData = await universeResponse.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch universe ID');
     }
+    
+    const universeData = await universeResponse.json();
+    const universeId = universeData.universeId;
+    
+    if (!universeId) {
+      throw new Error('Universe ID not found for this place');
+    }
+    
+    // Step 2: Get game details via proxy
+    const detailsResponse = await fetch(`${baseUrl}/api/roblox/games/${universeId}`);
+    
+    if (!detailsResponse.ok) {
+      throw new Error('Failed to fetch game details');
+    }
+    
+    const detailsData = await detailsResponse.json();
+    const gameInfo = detailsData.data && detailsData.data[0];
+    
+    if (!gameInfo) {
+      throw new Error('Game not found');
+    }
+    
+    // Step 3: Fetch thumbnail via proxy
+    let thumbnailUrl = null;
+    try {
+      const thumbnailResponse = await fetch(`${baseUrl}/api/roblox/thumbnails/${universeId}`);
+      
+      if (thumbnailResponse.ok) {
+        const thumbnailData = await thumbnailResponse.json();
+        thumbnailUrl = thumbnailData.data && thumbnailData.data[0] && thumbnailData.data[0].imageUrl;
+      }
+    } catch (thumbErr) {
+      console.warn('Failed to fetch thumbnail:', thumbErr.message);
+      // Continue without thumbnail
+    }
+    
+    return {
+      name: gameInfo.name,
+      universeId: universeId,
+      thumbnailUrl: thumbnailUrl
+    };
+  } catch (error) {
+    console.error('Error fetching game details:', error);
+    return null;
+  }
 }
 
 // Handle adding a new game
@@ -570,7 +593,7 @@ async function handleAddGame() {
     const gameDetails = await fetchGameDetails(placeId);
     
     if (!gameDetails) {
-        gameError.textContent = 'Не удалось загрузить информацию об игре. Проверьте URL и попробуйте снова.';
+        gameError.textContent = 'Не удалось загрузить информацию об игре. Проверьте URL и убедитесь, что API сервер настроен в разделе "Лаунчер".';
         gameError.classList.add('show');
         addBtn.disabled = false;
         addBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>Добавить';

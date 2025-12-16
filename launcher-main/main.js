@@ -56,50 +56,24 @@ function isAdmin() {
   }
 }
 
-// Перезапуск приложения с правами администратора
-function restartAsAdmin() {
-  if (process.platform !== 'win32') return;
-
-  const appPath = app.getPath('exe');
-
-  // Используем PowerShell для запуска с правами админа
-  const args = process.argv.slice(1);
-  const argsStr = args.map(a => `"${a}"`).join(' ');
-
-  spawn('powershell.exe', [
-    '-Command',
-    `Start-Process -FilePath "${appPath}" -ArgumentList '${argsStr}' -Verb RunAs`
-  ], {
-    detached: true,
-    stdio: 'ignore',
-    windowsHide: true
-  });
-
-  app.quit();
-}
-
-// Проверяем права администратора при запуске
-// Пропускаем проверку если:
-// 1. Запущено с флагом --elevated (уже запущено с правами через bootstrapper)
-// 2. Запущено с флагом --no-admin-check (для отладки)
+// Флаг elevated означает запуск через bootstrapper с правами админа
 const isElevatedLaunch = process.argv.includes('--elevated');
 
-if (process.platform === 'win32' && !isElevatedLaunch && !process.argv.includes('--no-admin-check')) {
-  // Проверка через создание тестового файла в системной папке
-  const testPath = path.join(process.env.SystemRoot || 'C:\\Windows', 'temp', 'admin_test_' + process.pid);
-
-  try {
-    fs.writeFileSync(testPath, 'test');
-    fs.unlinkSync(testPath);
-    // Права есть, продолжаем
-    console.log('Running with administrator privileges');
-  } catch (e) {
-    // Нет прав администратора - перезапускаем
-    console.log('Requesting administrator privileges...');
-    restartAsAdmin();
+// Admin права обеспечиваются через:
+// 1. Manifest в package.json (requestedExecutionLevel: requireAdministrator)
+// 2. Bootstrapper запускает с флагом --elevated
+// Поэтому НЕ перезапускаем приложение, только логируем статус
+if (process.platform === 'win32') {
+  if (isElevatedLaunch) {
+    console.log('Launched via bootstrapper with admin rights (--elevated flag)');
+  } else if (isAdmin()) {
+    console.log('Running with administrator privileges (via manifest)');
+  } else {
+    // Это может произойти только если manifest не применился
+    // (например, при запуске через npm start в dev режиме)
+    console.warn('Warning: Running without admin rights. Network mode may not work.');
+    console.warn('For full functionality, run the built .exe or use bootstrapper.');
   }
-} else if (isElevatedLaunch) {
-  console.log('Launched with --elevated flag, skipping admin check');
 }
 
 // СРАЗУ убиваем все существующие winws.exe при старте лаунчера

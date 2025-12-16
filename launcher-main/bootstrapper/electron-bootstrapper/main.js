@@ -248,7 +248,7 @@ function isAppInstalled() {
   return fs.existsSync(getAppExecutablePath());
 }
 
-// Run the main app WITH ADMIN RIGHTS
+// Run the main app (bootstrapper already has admin rights via manifest)
 function runApp() {
   const exePath = getAppExecutablePath();
   
@@ -257,15 +257,13 @@ function runApp() {
     return;
   }
   
-  sendStatus('status', 'Запуск с правами администратора...');
+  sendStatus('status', 'Запуск приложения...');
   
-  // Launch with admin rights using PowerShell Start-Process -Verb RunAs
-  // This will trigger UAC prompt if needed
-  const child = spawn('powershell.exe', [
-    '-NoProfile',
-    '-Command',
-    `Start-Process -FilePath "${exePath}" -ArgumentList "--elevated" -Verb RunAs -WorkingDirectory "${getAppDataPath()}"`
-  ], {
+  // Direct spawn - no PowerShell needed since bootstrapper already has admin rights
+  // via requestedExecutionLevel: requireAdministrator in package.json
+  // The main launcher will inherit admin rights from the bootstrapper
+  const child = spawn(exePath, ['--elevated'], {
+    cwd: getAppDataPath(),
     detached: true,
     stdio: 'ignore',
     windowsHide: true
@@ -276,7 +274,7 @@ function runApp() {
   // Close bootstrapper after short delay
   setTimeout(() => {
     app.quit();
-  }, 1000);
+  }, 1500);
 }
 
 // Send status to renderer
